@@ -1,1 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動画情報表示</title>
+</head>
+<body>
+    <div id="video-info"></div>
+    <div id="video-player-container">
+        <video id="video-player" controls style="max-width: 100%;"></video>
+    </div>
+</body>
+</html>
 
+<script>
+// 動画URLを取得
+function getBestVideoUrl(formats) {
+    if (!formats || formats.length === 0) return null;
+
+    // 解像度でソートし、一番高画質なURLを選択
+    formats.sort((a, b) => parseInt(b.qualityLabel) - parseInt(a.qualityLabel));
+    return formats[0].url;
+}
+
+// オーディオURLを取得（adaptiveFormatsから音声専用のフォーマットを選択）
+function getBestAudioUrl(formats) {
+    if (!formats || formats.length === 0) return null;
+
+    const audioFormats = formats.filter(format => format.mimeType.includes("audio"));
+    return audioFormats.length > 0 ? audioFormats[0].url : null;
+}
+
+// 動画プレイヤーを構成
+function setupVideoPlayer(videoUrl, audioUrl) {
+    const videoPlayer = document.getElementById("video-player");
+
+    if (!videoUrl) {
+        videoPlayer.parentElement.textContent = "動画URLが取得できませんでした。";
+        return;
+    }
+
+    // 動画ソースを設定
+    const videoSource = document.createElement("source");
+    videoSource.src = videoUrl;
+    videoSource.type = "video/mp4"; // 必要に応じて変更
+    videoPlayer.appendChild(videoSource);
+
+    // 音声URLがある場合、audio要素を組み合わせる方法も検討可能
+    if (audioUrl) {
+        console.log("音声URLが検出されましたが、動画に統合する必要があります。");
+        // オーディオと動画をマージする方法が必要な場合、別途対応が必要
+    }
+
+    videoPlayer.load(); // プレイヤーを更新
+}
+
+// メイン処理に動画プレイヤー構成を追加
+async function displayVideoData(data) {
+    if (!data) {
+        document.getElementById("video-info").textContent = "データの取得に失敗しました。";
+        return;
+    }
+
+    const container = document.getElementById("video-info");
+
+    const titleElement = document.createElement("h1");
+    titleElement.textContent = `タイトル: ${data.title}`;
+    container.appendChild(titleElement);
+
+    const thumbnailElement = document.createElement("img");
+    thumbnailElement.src = data.videoThumbnails[0]?.url || "no-thumbnail.jpg";
+    thumbnailElement.alt = "サムネイル";
+    container.appendChild(thumbnailElement);
+
+    const authorElement = document.createElement("p");
+    authorElement.textContent = `投稿者: ${data.author || "不明"}`;
+    container.appendChild(authorElement);
+
+    const viewCountElement = document.createElement("p");
+    viewCountElement.textContent = `再生回数: ${data.viewCount || "不明"}`;
+    container.appendChild(viewCountElement);
+
+    const publishedElement = document.createElement("p");
+    publishedElement.textContent = `公開日: ${data.publishedText || "不明"}`;
+    container.appendChild(publishedElement);
+
+    // 推奨動画を表示
+    if (data.recommendedVideos?.length) {
+        const recommendationsTitle = document.createElement("h2");
+        recommendationsTitle.textContent = "おすすめ動画";
+        container.appendChild(recommendationsTitle);
+
+        const recommendationsList = document.createElement("ul");
+        data.recommendedVideos.forEach(video => {
+            const listItem = document.createElement("li");
+            listItem.innerHTML = `<a href="/watch/?v=${video.videoId}">${video.title}</a>`;
+            recommendationsList.appendChild(listItem);
+        });
+        container.appendChild(recommendationsList);
+    }
+
+    // 動画プレイヤーを構成
+    const videoUrl = getBestVideoUrl(data.formatStreams || data.adaptiveFormats);
+    const audioUrl = getBestAudioUrl(data.adaptiveFormats);
+    setupVideoPlayer(videoUrl, audioUrl);
+}
+</script>
