@@ -1,1 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuki-DL トレンド動画</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        .video { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>トレンド動画一覧</h1>
+    <div id="videos"></div>
 
+    <script>
+        // curlコマンドの代わりにfetchを使用
+        const apiUrl = "https://thingproxy.freeboard.io/fetch/https://inv.nadeko.net/api/v1/trending?region=JP";
+
+        async function fetchTrendingVideos() {
+            try {
+                const response = await fetch(apiUrl);
+                const jsonData = await response.json();
+
+                const videosContainer = document.getElementById('videos');
+                videosContainer.innerHTML = ""; // コンテンツをリセット
+
+                jsonData.forEach(video => {
+                    const videoDiv = document.createElement('div');
+                    videoDiv.className = "video";
+                    videoDiv.innerHTML = `
+                        <h2>${video.title}</h2>
+                        <p><strong>作成者:</strong> ${video.author}</p>
+                        <p><strong>再生回数:</strong> ${video.viewCountText}</p>
+                        <p><strong>公開日:</strong> ${video.publishedText}</p>
+                        <p><strong>動画長さ:</strong> ${video.lengthSeconds}秒</p>
+                        <img src="${video.videoThumbnails?.[0]?.url}" alt="サムネイル" width="300">
+                        <p><a href="https://pokemogukunns.github.io/yuki-dl/watch/?v=${video.videoId}" target="_blank">${video.title}</a></p>
+                    `;
+                    videosContainer.appendChild(videoDiv);
+                });
+            } catch (error) {
+                console.error("データの取得中にエラーが発生しました:", error);
+                document.getElementById('videos').innerText = "データの取得に失敗しました。";
+            }
+        }
+
+        // ページ読み込み時にデータを取得
+        fetchTrendingVideos();
+    </script>
+</body>
+</html>
